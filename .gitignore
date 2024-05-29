@@ -1,3 +1,11 @@
+# Manual
+data
+dataset
+test.py
+timm-tinkering.ipynb
+faces
+face-extraction/test-images
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
