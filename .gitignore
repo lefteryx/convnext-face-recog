@@ -1,9 +1,14 @@
 # Manual
-dataset/part-1
-test.py
-timm-tinkering.ipynb
 faces
-face-extraction/test-images
+dataset/part-1
+model/checkpoints
+model/runs
+model/celeba
+*test*
+*tinkering*
+*.pth
+*.zip
+*.onnx
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
