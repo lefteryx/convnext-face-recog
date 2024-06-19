@@ -4,6 +4,7 @@ dataset/part-1
 model/checkpoints
 model/runs
 model/celeba
+*runs
 *test*
 *tinkering*
 *.pth
