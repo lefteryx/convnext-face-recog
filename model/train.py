@@ -80,16 +80,11 @@ class RobustImageFolder(datasets.ImageFolder):
             target = self.target_transform(target)
         return sample, target
     
-
-
 train_dataset = RobustImageFolder('../split/train', transform=transform)
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
 val_dataset = RobustImageFolder('../split/val', transform=transform)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-
-
-
 class ConvNeXtArcFace(nn.Module):
     def __init__(self, model_name, embedding_size, pretrained=True):
         super(ConvNeXtArcFace, self).__init__()
@@ -100,8 +95,6 @@ class ConvNeXtArcFace(nn.Module):
         x = self.convnext.forward_features(x)
         embeddings = F.avg_pool2d(x, 7).flatten(1)
         return embeddings
-    
-
 class EarlyStopping:
     def __init__(self, patience=3*patience, verbose=False, delta=delta_early):
         self.patience = patience
@@ -144,7 +137,6 @@ class EarlyStopping:
                 }, f"checkpoints/best_{epoch}.pth")        
         self.val_loss_min = val_loss
 
-
 model_name = 'convnextv2_atto'
 model = ConvNeXtArcFace(model_name, embedding_size)
 model = model.to(device)
@@ -168,21 +160,17 @@ def load_checkpoint(filepath, model, optimizer, scheduler, loss_optimizer, loss_
     loss = checkpoint['loss']
     return model, optimizer, scheduler, loss_optimizer, loss_scheduler, criterion, epoch, loss
 
-
-
 checkpoint = None
 if checkpoint:
     model, optimizer, scheduler, loss_optimizer, loss_scheduler, criterion, start_epoch, loss = load_checkpoint(
         f"checkpoints/{checkpoint}", model, optimizer, scheduler, loss_optimizer, loss_scheduler, criterion
         )
-    
 
 def get_all_embeddings(dataset, model):
     tester = testers.BaseTester()
     return tester.get_all_embeddings(dataset, model)
 
-accuracy_calculator = AccuracyCalculator(include=("precision_at_1",), k=1)
-
+accuracy_calculator = AccuracyCalculator(include=("precision_at_1",), k=1, device=torch.device('cpu'))
 
 prev_lr = None
 prev_loss_lr = None
@@ -211,6 +199,8 @@ for epoch in range(start_epoch, epochs+1):
         loss_optimizer.step()
         
         running_loss += loss.item()
+
+    model.eval()
 
     train_embeddings, train_labels = get_all_embeddings(train_dataset, model)
     val_embeddings, val_labels = get_all_embeddings(val_dataset, model)
@@ -273,7 +263,5 @@ for epoch in range(start_epoch, epochs+1):
 
 if log:
     writer.close()
-
-
 
 torch.save(model.state_dict(), 'convnext_atto_arcface.pth')
