@@ -4,7 +4,6 @@ const context = canvas.getContext('2d');
 const statusElement = document.getElementById('status');
 let model, faceCascade;
 
-// Load the model
 async function loadModel() {
     model = await tf.loadGraphModel('model/model.json');
     statusElement.innerText = 'Status: Model Loaded';
@@ -46,8 +45,6 @@ async function loadCascade() {
 }
 
 
-
-// Load Employee Embeddings
 async function loadEmbeddings() {
     const response = await fetch('employee_embeddings/embeddings.json');
     return await response.json();
@@ -65,6 +62,9 @@ async function setupCamera() {
 }
 
 async function init() {
+    await tf.setBackend('cpu');
+    console.log(`Backend set to ${tf.getBackend()}`);
+
     await loadModel();
     await loadCascade();
     const embeddings = await loadEmbeddings();
@@ -73,7 +73,7 @@ async function init() {
     statusElement.innerText = 'Status: Ready';
 
     video.addEventListener('play', () => {
-        const frameRate = 100;
+        const frameRate = 24;
         let frameCount = 0;
 
         setInterval(() => {
@@ -96,20 +96,32 @@ async function init() {
             } else if (faces.size() > 1) {
                 statusElement.innerText = 'More than one face detected';
             } else {
-                console.log("Faces = 1 ke andar");
                 const face = faces.get(0);
-                console.log("const face ke baad");
                 const faceImage = image.roi(face);
-                console.log("const faceImage ke baad");
-                const tensor = tf.browser.fromPixels(faceImage).resizeBilinear([224, 224]).expandDims(0).toFloat().div(255);
-                console.log("Tensor ke baad, embedding ke pehle");
+
+                const imageWidth = faceImage.size().width;
+                const imageHeight = faceImage.size().height;
+                const imageChannels = faceImage.channels();
+
+                const imageData = new ImageData(
+                    new Uint8ClampedArray(4*imageWidth*imageHeight),
+                    imageWidth,
+                    imageHeight
+                );
+
+                const pretensor = tf.browser.fromPixels(imageData)
+                                            .resizeBilinear([224, 224])
+                                            .expandDims(0)
+                                            .toFloat()
+                                            .div(255);
+
+                const tensor = pretensor.transpose([0, 3, 1, 2]);
+
                 const embedding = model.predict(tensor).dataSync();
                 let maxSimilarity = 0;
                 let verified = false;
 
                 statusElement.innerText = 'Checking authorization...';
-
-                // console log
 
                 for (const employee of embeddings) {
                     for (const empEmbedding of employee.embeddings) {
